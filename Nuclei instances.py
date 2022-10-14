@@ -23,7 +23,7 @@ import numpy as np
 # FADH C13 Nuclei, ordered in descending order of sum of squares, using the MHz tensors
 
 
-FAD_carbon_tensors = np.load("C8M_anisotropic_MHz.npy")
+FAD_carbon_tensors = np.load("C7M_anisotropic_MHz.npy")
 print(FAD_carbon_tensors)
 
 
