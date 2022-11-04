@@ -266,9 +266,6 @@ C2 = Nucleus('C2', 1/2, TrpH_HFITs[1]*1e6, is_isotopologue=True)
 #O3 = Nucleus('O3', 5/2, TrpH_HFITs[0]*1e6, is_isotopologue=True)   # NB, should we include these, if we do have to input the spin-5/2 matrices etc...
 
 
-# We now set up the desired nuclei involved in our simulation
-
-
 # We can define the singlet projection operator
 
 def Ps():
@@ -283,7 +280,7 @@ def H_zee(field_strength, theta, phi):
 # NB: note that the field strength of this rf field will not in general be the same as the geomagnetic field strenght !!!!
 
 def H_perp(field_strength, theta, phi):
-    return (gyromag / (2 * np.pi)) * field_strength * (np.cos(theta) * np.cos(phi) * (Nucleus.SAx() + Nucleus.SBx()) + np.cos(theta) * np.sin(phi) * (Nucleus.SAy() + Nucleus.SBy()) - np.sin(theta) * (Nucleus.SAz() + 0 * Nucleus.SBz()))
+    return (gyromag / (2 * np.pi)) * field_strength * (np.cos(theta) * np.cos(phi) * (Nucleus.SAx() + Nucleus.SBx()) + np.cos(theta) * np.sin(phi) * (Nucleus.SAy() + Nucleus.SBy()) - np.sin(theta) * (Nucleus.SAz() + Nucleus.SBz()))
 
 # Can also define a dipolar coupling Hamiltonian
 
@@ -302,7 +299,7 @@ def H_hyperfine_new():
     sum = 0
     for nucleus in Nucleus.nuclei_included_in_simulation:
         ix, iy, iz = nucleus.Ix(), nucleus.Iy(), nucleus.Iz()
-        val = nucleus.hyperfine_interaction_tensor[0,0]*sax*ix + nucleus.hyperfine_interaction_tensor[0,1]*sax*iy + nucleus.hyperfine_interaction_tensor[0,2]*sax*iy + nucleus.hyperfine_interaction_tensor[1,0]*say*ix + nucleus.hyperfine_interaction_tensor[1,1]*say*iy + nucleus.hyperfine_interaction_tensor[1,2]*say*iz + nucleus.hyperfine_interaction_tensor[2,0]*saz*ix + nucleus.hyperfine_interaction_tensor[2,1]*saz*iy + nucleus.hyperfine_interaction_tensor[2,2]*saz*iz
+        val = nucleus.hyperfine_interaction_tensor[0,0]*sax*ix + nucleus.hyperfine_interaction_tensor[0,1]*sax*iy + nucleus.hyperfine_interaction_tensor[0,2]*sax*iz + nucleus.hyperfine_interaction_tensor[1,0]*say*ix + nucleus.hyperfine_interaction_tensor[1,1]*say*iy + nucleus.hyperfine_interaction_tensor[1,2]*say*iz + nucleus.hyperfine_interaction_tensor[2,0]*saz*ix + nucleus.hyperfine_interaction_tensor[2,1]*saz*iy + nucleus.hyperfine_interaction_tensor[2,2]*saz*iz
         sum += val
     return sum
 
@@ -384,8 +381,21 @@ def Vmax_Decreasing_SS(number_of_nuclei, field_strength, theta, phi, file_name =
 
     return Vmax_value
 
+for nucleus in [C10, C11, C12, C13, C14, C15]:
+    nucleus.add_to_simulation()
+    print(nucleus.hyperfine_interaction_tensor/1e6)
+print(Vmax(5000000,0,0))
+Nucleus.reset_simulation()
+Nucleus.remove_all_from_simulation()
 
+for nucleus in [C10, C11, C12]:
+    nucleus.add_to_simulation()
+print(Vmax(5000000,0,0))
+Nucleus.reset_simulation()
+Nucleus.remove_all_from_simulation()
 
-
-
-print(TrpH_HFITs[8])
+for nucleus in [C13, C13, C15]:
+    nucleus.add_to_simulation()
+print(Vmax(0,0,0))
+Nucleus.reset_simulation()
+Nucleus.remove_all_from_simulation()
