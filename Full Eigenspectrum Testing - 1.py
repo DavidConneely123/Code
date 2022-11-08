@@ -241,7 +241,7 @@ def Ps():
 # Can also define the Zeeman Hamiltonian (NB in s^-1)
 
 def H_zee(field_strength, theta, phi):
-    return (gyromag/(2*np.pi)) * field_strength * (np.sin(theta) * np.cos(phi) * (Nucleus.SAx() + Nucleus.SBx()) + np.sin(theta) * np.sin(phi) * (Nucleus.SAy() + Nucleus.SBy()) + np.cos(theta) * (Nucleus.SAz() + 0*Nucleus.SBz()))
+    return (gyromag/(2*np.pi)) * field_strength * (np.sin(theta) * np.cos(phi) * (Nucleus.SAx() + Nucleus.SBx()) + np.sin(theta) * np.sin(phi) * (Nucleus.SAy() + Nucleus.SBy()) + np.cos(theta) * (Nucleus.SAz() + 1*Nucleus.SBz()))
 
 # Can also define a term for the interaction of our electron spins with an rf field perpendicular to the geomagnetic field
 # NB: note that the field strength of this rf field will not in general be the same as the geomagnetic field strenght !!!!
@@ -309,28 +309,109 @@ def Vmax(field_strength, theta, phi, display = False, display_eigenvalues = Fals
 
 # Creating some blank nucleus objects
 
-for i in range(6):
+for i in range(20):
     name = f'Nuc{i}'
     Nucleus(name=name, spin=1 / 2, is_isotopologue=False, hyperfine_interaction_tensor= np.zeros((3,3)))
 
 
-def tensor_list(number_of_tensors, axiality):
+def tensor_list(number_of_tensors, axiality, off_diagonals = False):
 
     list_of_tensors = []
 
     for _ in range(number_of_tensors):
         tensor = np.zeros((3,3))
+        tensor[0,0] = random.uniform(-(1-axiality), (1-axiality))*10
         tensor[1,1] = random.uniform(-(1-axiality), (1-axiality))*10
-        tensor[2,2] = random.uniform(-(1-axiality), (1-axiality))*10
         tensor[2,2] = random.uniform(-1,1)*10
+
+        if off_diagonals:
+            tensor[0,1] = random.uniform(-(1-axiality), (1-axiality))*0.2
+            tensor[1,0] = random.uniform(-(1-axiality), (1-axiality))*0.2
+
+            tensor[1, 2] = random.uniform(-(1 - axiality), (1 - axiality)) * 0.2
+            tensor[2, 1] = random.uniform(-(1 - axiality), (1 - axiality)) * 0.2
+
+            tensor[0, 2] = random.uniform(-(1 - axiality), (1 - axiality)) * 0.2
+            tensor[2, 0] = random.uniform(-(1 - axiality), (1 - axiality)) * 0.2
+
+
+
         list_of_tensors.append(tensor)
 
     return list_of_tensors
 
-list_of_tensors = tensor_list(6, 1)
+number_of_nuclei = 6
 
-for i in range(6):
+list_of_tensors = tensor_list(number_of_nuclei, 0.9)
+
+#for tensor in list_of_tensors:
+#   print(tensor, '\n \n')
+
+for i in range(number_of_nuclei):
         Nucleus.all[i].hyperfine_interaction_tensor = list_of_tensors[i] * 1e6
 
 
-print(Nucleus.all[5].hyperfine_interaction_tensor)
+
+for nucleus in Nucleus.all[0:number_of_nuclei]:
+    nucleus.add_to_simulation()
+
+eigenvalues_total, eigenvectors_total = np.linalg.eig(Dense_Hamiltonian(0.05,0,0))
+idx = eigenvalues_total.argsort()[::-1]
+eigenvalues_total = eigenvalues_total[idx]
+
+
+Nucleus.reset_simulation()
+Nucleus.remove_all_from_simulation()
+
+for nucleus in Nucleus.all[0:int(number_of_nuclei/2)]:
+    nucleus.add_to_simulation()
+
+eigenvalues_1, eigenvectors_1 = np.linalg.eig(Dense_Hamiltonian(0.05,0,0))
+idx = eigenvalues_1.argsort()[::-1]
+eigenvalues_1 = eigenvalues_1[idx]
+
+Nucleus.reset_simulation()
+Nucleus.remove_all_from_simulation()
+
+
+for nucleus in Nucleus.all[int(number_of_nuclei/2) : number_of_nuclei]:
+    nucleus.add_to_simulation()
+
+eigenvalues_2, eigenvectors_2 = np.linalg.eig(Dense_Hamiltonian(0,0,0))
+idx = eigenvalues_2.argsort()[::-1]
+eigenvalues_2 = eigenvalues_2[idx]
+
+
+eigenvalues_total = np.ndarray.tolist(eigenvalues_total)
+
+print(eigenvalues_total)
+
+for eigenvalue in eigenvalues_total:
+    real_eigenvalue = np.real(eigenvalue)
+    x = np.linspace(1,2.5,100)
+    y = np.linspace(real_eigenvalue,real_eigenvalue,100)
+    plt.plot(x,y, color = 'red')
+
+
+sums_of_eigenvalues = []
+for eigenvalue2 in eigenvalues_2:
+    for eigenvalue1 in eigenvalues_1:
+        sums_of_eigenvalues.append(eigenvalue2 + eigenvalue1)
+
+sums_of_eigenvalues.sort(reverse=True)
+sums_of_eigenvalues = sums_of_eigenvalues[0::4]
+
+print(sums_of_eigenvalues)
+
+for eigenvalue in sums_of_eigenvalues:
+    real_eigenvalue = np.real(eigenvalue)
+    x = np.linspace(2.5,4,100)
+    y = np.linspace(real_eigenvalue,real_eigenvalue,100)
+    plt.plot(x,y, color = 'black')
+
+
+deviation_list = [ '%.2f' %np.real(100*((eigenvalues_total[i] - sums_of_eigenvalues[i])/eigenvalues_total[i])) for i in range(len(eigenvalues_total)) ]
+
+print(deviation_list)
+
+plt.show()
